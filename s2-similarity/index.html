@@ -1,0 +1,1280 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Triangle Transformer</title>
+  <style>
+    :root {
+      --paper: #fff8ef;
+      --panel: #fffdf8;
+      --ink: #3d3328;
+      --muted: #7c6b58;
+      --line: #ead8bd;
+      --warm: #c87335;
+      --warm-dark: #8f4f24;
+      --blue: #4f89a8;
+      --blue-fill: rgba(79, 137, 168, 0.22);
+      --orange: #d88b45;
+      --orange-fill: rgba(216, 139, 69, 0.18);
+      --green: #5d9a6f;
+      --amber: #c68b2e;
+      --danger: #bd5b46;
+      --shadow: 0 16px 38px rgba(84, 53, 22, 0.13);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      overflow: auto;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+    }
+
+    button {
+      font: inherit;
+    }
+
+    .app {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      min-height: 100vh;
+      min-height: 100dvh;
+      padding: 14px;
+      gap: 12px;
+    }
+
+    header {
+      display: grid;
+      grid-template-columns: minmax(220px, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px 14px;
+      box-shadow: var(--shadow);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(20px, 2.5vw, 30px);
+      letter-spacing: 0;
+      line-height: 1.15;
+    }
+
+    .subtitle {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .top-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .header-controls {
+      display: grid;
+      gap: 8px;
+      justify-items: end;
+    }
+
+    .mode-tabs {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .mode-button,
+    .soft-button {
+      border: 1px solid var(--line);
+      background: #fff4e4;
+      color: var(--ink);
+      border-radius: 8px;
+      padding: 10px 12px;
+      min-height: 42px;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    .mode-button.active {
+      background: var(--warm);
+      color: #fffaf2;
+      border-color: var(--warm);
+      box-shadow: 0 6px 16px rgba(200, 115, 53, 0.25);
+    }
+
+    .soft-button {
+      background: #fffaf2;
+    }
+
+    .soft-button.active {
+      background: #f1dfc5;
+      border-color: #d7b98f;
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 310px;
+      gap: 12px;
+      min-height: 0;
+    }
+
+    main.focus-mode {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    main.focus-mode .side-panel {
+      display: none;
+    }
+
+    .stage-card,
+    .side-panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      min-height: 0;
+    }
+
+    .stage-card {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .canvas-label {
+      position: absolute;
+      top: 12px;
+      left: 14px;
+      right: 14px;
+      z-index: 2;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      pointer-events: none;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    #canvas {
+      width: 100%;
+      height: 100%;
+      min-height: 510px;
+      display: block;
+      background:
+        linear-gradient(rgba(255, 250, 242, 0.85), rgba(255, 250, 242, 0.85)),
+        repeating-linear-gradient(0deg, transparent 0, transparent 31px, rgba(222, 199, 166, 0.26) 32px),
+        repeating-linear-gradient(90deg, transparent 0, transparent 31px, rgba(222, 199, 166, 0.26) 32px);
+      touch-action: none;
+      user-select: none;
+    }
+
+    .side-panel {
+      padding: 14px;
+      overflow: auto;
+    }
+
+    .panel-section {
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 12px;
+      margin-bottom: 12px;
+    }
+
+    .step-strip {
+      position: absolute;
+      left: 14px;
+      right: 14px;
+      bottom: 12px;
+      z-index: 3;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      pointer-events: none;
+    }
+
+    .step-pill {
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(255, 250, 242, 0.9);
+      border: 1px solid #efd9b9;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+      box-shadow: 0 8px 18px rgba(84, 53, 22, 0.08);
+    }
+
+    .step-pill.active {
+      background: #d48542;
+      border-color: #d48542;
+      color: #fffaf2;
+    }
+
+    .teacher-only.hidden,
+    .student-hidden {
+      display: none;
+    }
+
+    .panel-section:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+      margin-bottom: 0;
+    }
+
+    h2 {
+      margin: 0 0 8px;
+      font-size: 18px;
+      letter-spacing: 0;
+    }
+
+    .prompt {
+      margin: 0;
+      line-height: 1.45;
+      color: var(--muted);
+    }
+
+    .metrics {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+      font-size: 14px;
+    }
+
+    .metric {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 8px 10px;
+      background: #fff7eb;
+      border: 1px solid #f0dec4;
+      border-radius: 8px;
+    }
+
+    .metric strong {
+      color: var(--warm-dark);
+    }
+
+    .tool-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      display: inline-block;
+    }
+
+    .dot.blue {
+      background: var(--blue);
+    }
+
+    .dot.orange {
+      background: var(--orange);
+    }
+
+    .hint {
+      font-size: 13px;
+      line-height: 1.45;
+      color: var(--muted);
+    }
+
+    .target-poly {
+      fill: var(--orange-fill);
+      stroke: var(--orange);
+      stroke-width: 4;
+      stroke-linejoin: round;
+    }
+
+    .source-poly {
+      fill: rgba(79, 137, 168, 0.08);
+      stroke: rgba(79, 137, 168, 0.7);
+      stroke-width: 4;
+      stroke-linejoin: round;
+      stroke-dasharray: 8 7;
+    }
+
+    .moving-poly {
+      fill: var(--blue-fill);
+      stroke: var(--blue);
+      stroke-width: 4;
+      stroke-linejoin: round;
+      cursor: grab;
+    }
+
+    .moving-poly:active {
+      cursor: grabbing;
+    }
+
+    .fit .moving-poly {
+      stroke: var(--green);
+      fill: rgba(93, 154, 111, 0.22);
+    }
+
+    .fit .target-poly {
+      stroke: var(--green);
+    }
+
+    .fit .selection-box,
+    .fit .resize-handle,
+    .fit .rotate-handle,
+    .fit .handle-line {
+      stroke: var(--green);
+    }
+
+    .vertex {
+      fill: #fffaf2;
+      stroke-width: 3;
+    }
+
+    .abc-dot {
+      stroke: var(--blue);
+    }
+
+    .def-dot {
+      stroke: var(--orange);
+    }
+
+    .label {
+      font-size: 24px;
+      font-weight: 700;
+      fill: var(--ink);
+      paint-order: stroke;
+      stroke: #fff8ef;
+      stroke-width: 5px;
+      stroke-linejoin: round;
+    }
+
+    .side-label {
+      font-size: 18px;
+      font-weight: 650;
+      fill: var(--ink);
+      paint-order: stroke;
+      stroke: #fff8ef;
+      stroke-width: 5px;
+      stroke-linejoin: round;
+    }
+
+    .selection-box {
+      fill: none;
+      stroke: #c87335;
+      stroke-width: 3;
+      stroke-linejoin: round;
+      pointer-events: none;
+    }
+
+    .resize-handle {
+      fill: #fffaf2;
+      stroke: #c87335;
+      stroke-width: 3;
+      cursor: pointer;
+    }
+
+    .handle-hit {
+      fill: transparent;
+      stroke: transparent;
+      stroke-width: 24;
+      cursor: pointer;
+    }
+
+    .rotate-handle {
+      fill: #fffaf2;
+      stroke: #c87335;
+      stroke-width: 3;
+      cursor: pointer;
+    }
+
+    .rotate-symbol {
+      font-size: 20px;
+      font-weight: 700;
+      fill: #8f4f24;
+      pointer-events: none;
+      text-anchor: middle;
+      dominant-baseline: middle;
+    }
+
+    .handle-line {
+      stroke: #c87335;
+      stroke-width: 2;
+      stroke-dasharray: 5 5;
+      opacity: 0.55;
+      pointer-events: none;
+    }
+
+    .angle-arc {
+      fill: none;
+      stroke: var(--amber);
+      stroke-width: 4;
+      stroke-linecap: round;
+    }
+
+    .canvas-toast {
+      opacity: 0;
+      transition: opacity 160ms ease;
+      pointer-events: none;
+    }
+
+    .canvas-toast.show {
+      opacity: 1;
+    }
+
+    .toast-box {
+      fill: #eef7ec;
+      stroke: #b9d9b8;
+      stroke-width: 2;
+      filter: drop-shadow(0 8px 18px rgba(65, 76, 42, 0.14));
+    }
+
+    .toast-box.warn {
+      fill: #fff1df;
+      stroke: #e5bd84;
+    }
+
+    .toast-text {
+      font-size: 17px;
+      fill: #315b3a;
+      font-weight: 650;
+    }
+
+    .toast-text.warn {
+      fill: #7c4d17;
+    }
+
+    @media (max-width: 900px) {
+      .app {
+        padding: 10px;
+      }
+
+      header {
+        grid-template-columns: 1fr;
+      }
+
+      .top-actions {
+        justify-content: flex-start;
+      }
+
+      main {
+        grid-template-columns: 1fr;
+        grid-template-rows: minmax(450px, 1fr) auto;
+      }
+
+      .side-panel {
+        max-height: 38vh;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div>
+        <h1>Triangle Transformer</h1>
+        <div class="subtitle">Move, rotate, and scale triangle ABC to investigate similarity.</div>
+      </div>
+      <div class="header-controls">
+        <div class="mode-tabs" aria-label="Mode selector">
+          <button class="mode-button active" data-mode="trial">Trial</button>
+          <button class="mode-button" data-mode="sss">SSS</button>
+          <button class="mode-button" data-mode="sas">SAS</button>
+          <button class="mode-button" data-mode="warning">Warning</button>
+        </div>
+        <div class="top-actions">
+          <button id="teacherModeButton" class="soft-button">Teacher Mode</button>
+          <button id="focusButton" class="soft-button">Focus View</button>
+        </div>
+      </div>
+    </header>
+
+    <main id="mainLayout">
+      <section class="stage-card" aria-label="Triangle workspace">
+        <div class="canvas-label">
+          <span>Fixed ABC + movable copy</span>
+          <span>Fixed target: triangle DEF</span>
+        </div>
+        <svg id="canvas" viewBox="0 0 920 560" role="img" aria-label="Interactive triangle transformer">
+          <g id="targetLayer"></g>
+          <g id="movingLayer"></g>
+        </svg>
+        <div id="stepStrip" class="step-strip" aria-hidden="true"></div>
+      </section>
+
+      <aside class="side-panel">
+        <section class="panel-section">
+          <h2 id="modeTitle">Trial Mode</h2>
+          <p id="modePrompt" class="prompt"></p>
+        </section>
+
+        <section class="panel-section">
+          <h2>Transform Copy</h2>
+          <p class="hint">
+            Drag the blue copy to move it. Use the four corner handles to enlarge or reduce.
+            Use the bottom handle to rotate.
+          </p>
+        </section>
+
+        <section class="panel-section">
+          <div class="tool-actions">
+            <button id="resetButton" class="soft-button">Reset</button>
+            <button id="ratiosButton" class="soft-button teacher-only">Show Ratios</button>
+            <button id="measureButton" class="soft-button">Hide Labels</button>
+            <button id="snapButton" class="soft-button teacher-only">Snap Off</button>
+          </div>
+        </section>
+
+        <section class="panel-section">
+          <h2>Measurements</h2>
+          <div id="measurements" class="metrics"></div>
+        </section>
+
+        <section id="ratioSection" class="panel-section teacher-only" hidden>
+          <h2>Ratios</h2>
+          <div id="ratios" class="metrics"></div>
+        </section>
+
+        <section class="panel-section">
+          <h2>How to use</h2>
+          <p class="hint">
+            Triangle ABC and triangle DEF are fixed. A movable copy of ABC is provided for transformation.
+            Drag the copy directly, then use the corner handles to scale and the bottom handle to rotate.
+          </p>
+          <div class="legend" aria-hidden="true">
+            <span><i class="dot blue"></i>ABC</span>
+            <span><i class="dot orange"></i>DEF</span>
+          </div>
+        </section>
+      </aside>
+    </main>
+  </div>
+
+  <script>
+    const svg = document.getElementById("canvas");
+    const mainLayout = document.getElementById("mainLayout");
+    const stepStrip = document.getElementById("stepStrip");
+    const movingLayer = document.getElementById("movingLayer");
+    const targetLayer = document.getElementById("targetLayer");
+    const modeTitle = document.getElementById("modeTitle");
+    const modePrompt = document.getElementById("modePrompt");
+    const measurementsBox = document.getElementById("measurements");
+    const ratiosBox = document.getElementById("ratios");
+    const ratioSection = document.getElementById("ratioSection");
+    const resetButton = document.getElementById("resetButton");
+    const ratiosButton = document.getElementById("ratiosButton");
+    const measureButton = document.getElementById("measureButton");
+    const snapButton = document.getElementById("snapButton");
+    const teacherModeButton = document.getElementById("teacherModeButton");
+    const focusButton = document.getElementById("focusButton");
+
+    const PX = 56;
+    const MODE_BUTTONS = Array.from(document.querySelectorAll(".mode-button"));
+
+    let currentMode = "trial";
+    let showRatios = false;
+    let showLabels = true;
+    let snapEnabled = false;
+    let teacherMode = false;
+    let focusMode = false;
+    let dragState = null;
+
+    const state = {
+      tx: 230,
+      ty: 305,
+      scale: 1,
+      rotation: 0
+    };
+
+    const modes = {
+      trial: {
+        title: "Trial Mode",
+        prompt: "Try moving, turning, and resizing the copy of ABC. Notice what changes and what stays the same.",
+        abc: triangleFromSSS(3, 2.4, 2.6, PX),
+        def: scaleTriangle(triangleFromSSS(3, 2.4, 2.6, PX), 1.35),
+        sourceCenter: { x: 165, y: 345 },
+        targetCenter: { x: 690, y: 315 },
+        start: { tx: 380, ty: 340, scale: 1, rotation: -14 },
+        measurements: [
+          ["ABC", "trial triangle"],
+          ["DEF", "same shape, larger target"]
+        ],
+        steps: ["Try moving", "Try rotating", "Try resizing"],
+        abcSideLabels: ["", "", ""],
+        defSideLabels: ["", "", ""],
+        ratios: [],
+        fitMessage: "Fit achieved: triangle ABC is congruent to triangle DEF after scaling.",
+        warning: false
+      },
+      sss: {
+        title: "SSS Discovery",
+        prompt: "First compare the three side ratios on your worksheet. Then scale, move, and rotate ABC until it fits DEF.",
+        abc: triangleFromSSS(2.5, 3, 2.2, PX),
+        def: triangleFromSSS(5, 6, 4.4, PX),
+        sourceCenter: { x: 165, y: 345 },
+        targetCenter: { x: 690, y: 315 },
+        start: { tx: 380, ty: 350, scale: 1, rotation: -18 },
+        measurements: [
+          ["AB, BC, CA", "2.5 cm, 3 cm, 2.2 cm"],
+          ["DE, EF, FD", "5 cm, 6 cm, 4.4 cm"]
+        ],
+        steps: ["1 Compare ratios", "2 Fit the copy", "3 Make a conjecture"],
+        abcSideLabels: ["2.5 cm", "3 cm", "2.2 cm"],
+        defSideLabels: ["5 cm", "6 cm", "4.4 cm"],
+        ratios: [
+          ["DE : AB", "5 : 2.5 = 2"],
+          ["EF : BC", "6 : 3 = 2"],
+          ["FD : CA", "4.4 : 2.2 = 2"]
+        ],
+        fitMessage: "Fit achieved: all three sides match after scaling.",
+        warning: false
+      },
+      sas: {
+        title: "SAS Discovery",
+        prompt: "Compare two side ratios and the included angle. Then try to fit ABC exactly onto DEF.",
+        abc: triangleFromSAS(4, 2.4, 120, PX),
+        def: triangleFromSAS(5, 3, 120, PX),
+        sourceCenter: { x: 235, y: 280 },
+        targetCenter: { x: 690, y: 330 },
+        start: { tx: 250, ty: 455, scale: 1, rotation: -8 },
+        measurements: [
+          ["AB, BC", "4 cm, 2.4 cm"],
+          ["DE, EF", "5 cm, 3 cm"],
+          ["Included angles", "angle B = angle E = 120 degrees"]
+        ],
+        steps: ["1 Compare ratios", "2 Check included angle", "3 Fit the copy"],
+        abcSideLabels: ["4 cm", "2.4 cm", ""],
+        defSideLabels: ["5 cm", "3 cm", ""],
+        ratios: [
+          ["DE : AB", "5 : 4 = 1.25"],
+          ["EF : BC", "3 : 2.4 = 1.25"],
+          ["Included angle", "angle E = angle B = 120 degrees"]
+        ],
+        fitMessage: "Fit achieved: the included angle fixes the opening.",
+        warning: false,
+        angleMarks: true
+      },
+      warning: {
+        title: "Non-included Angle Warning",
+        prompt: "Two side ratios and an equal angle are shown, but the angle is not between the two proportional sides. Try fitting ABC onto DEF.",
+        abc: triangleFromSSA(5, 4, 45, "long", PX),
+        def: triangleFromSSA(6, 4.8, 45, "short", PX),
+        sourceCenter: { x: 235, y: 280 },
+        targetCenter: { x: 690, y: 330 },
+        start: { tx: 250, ty: 455, scale: 1, rotation: -8 },
+        measurements: [
+          ["AB, BC", "5 cm, 4 cm"],
+          ["DE, EF", "6 cm, 4.8 cm"],
+          ["Equal angle", "angle A = angle D = 45 degrees"],
+          ["Warning", "the equal angle is not included"]
+        ],
+        steps: ["1 Compare data", "2 Try to fit", "3 Explain the problem"],
+        abcSideLabels: ["5 cm", "4 cm", ""],
+        defSideLabels: ["6 cm", "4.8 cm", ""],
+        ratios: [
+          ["DE : AB", "6 : 5 = 1.2"],
+          ["EF : BC", "4.8 : 4 = 1.2"],
+          ["Equal angle", "angle D = angle A = 45 degrees"],
+          ["Problem", "angle A/D is not between the two proportional sides"]
+        ],
+        fitMessage: "This is the warning case: the equal angle is not included, so the fit is not forced.",
+        warning: true,
+        angleMarks: true,
+        nonIncluded: true
+      }
+    };
+
+    function triangleFromSSS(ab, bc, ca, px) {
+      const A = { x: 0, y: 0, label: "A" };
+      const B = { x: ab * px, y: 0, label: "B" };
+      const cx = ((ab * ab) + (ca * ca) - (bc * bc)) / (2 * ab);
+      const cy = Math.sqrt(Math.max((ca * ca) - (cx * cx), 0));
+      const C = { x: cx * px, y: -cy * px, label: "C" };
+      return centerPoints([A, B, C]);
+    }
+
+    function triangleFromSAS(side1, side2, angleDeg, px) {
+      const angle = (180 - angleDeg) * Math.PI / 180;
+      const A = { x: -side1 * px, y: 0, label: "A" };
+      const B = { x: 0, y: 0, label: "B" };
+      const C = {
+        x: side2 * Math.cos(angle) * px,
+        y: -side2 * Math.sin(angle) * px,
+        label: "C"
+      };
+      return centerPoints([A, B, C]);
+    }
+
+    function triangleFromSSA(sideAB, sideBC, angleA, branch, px) {
+      const a = sideBC;
+      const c = sideAB;
+      const Adeg = angleA * Math.PI / 180;
+      const base = c * Math.cos(Adeg);
+      const height = Math.sqrt(Math.max(a * a - (c * Math.sin(Adeg)) ** 2, 0));
+      const t = branch === "short" ? base - height : base + height;
+      const A = { x: 0, y: 0, label: "A" };
+      const B = { x: c * px, y: 0, label: "B" };
+      const C = { x: t * Math.cos(Adeg) * px, y: -t * Math.sin(Adeg) * px, label: "C" };
+      return centerPoints([A, B, C]);
+    }
+
+    function centerPoints(points) {
+      const centroid = points.reduce((acc, p) => ({ x: acc.x + p.x / 3, y: acc.y + p.y / 3 }), { x: 0, y: 0 });
+      return points.map(p => ({ ...p, x: p.x - centroid.x, y: p.y - centroid.y }));
+    }
+
+    function scaleTriangle(points, factor) {
+      return points.map(p => ({ ...p, x: p.x * factor, y: p.y * factor }));
+    }
+
+    function toDefLabels(points) {
+      const labels = ["D", "E", "F"];
+      return points.map((p, i) => ({ ...p, label: labels[i] }));
+    }
+
+    function place(points, center) {
+      return points.map(p => ({ ...p, x: p.x + center.x, y: p.y + center.y }));
+    }
+
+    function pointString(points) {
+      return points.map(p => `${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(" ");
+    }
+
+    function transformPoint(p) {
+      const rad = state.rotation * Math.PI / 180;
+      const x = p.x * state.scale;
+      const y = p.y * state.scale;
+      return {
+        x: state.tx + x * Math.cos(rad) - y * Math.sin(rad),
+        y: state.ty + x * Math.sin(rad) + y * Math.cos(rad)
+      };
+    }
+
+    function localBounds(points) {
+      const xs = points.map(p => p.x);
+      const ys = points.map(p => p.y);
+      return {
+        minX: Math.min(...xs),
+        maxX: Math.max(...xs),
+        minY: Math.min(...ys),
+        maxY: Math.max(...ys)
+      };
+    }
+
+    function svgPointFromEvent(event) {
+      const pt = svg.createSVGPoint();
+      pt.x = event.clientX;
+      pt.y = event.clientY;
+      const transformed = pt.matrixTransform(svg.getScreenCTM().inverse());
+      return { x: transformed.x, y: transformed.y };
+    }
+
+    function setMode(id) {
+      currentMode = id;
+      MODE_BUTTONS.forEach(btn => btn.classList.toggle("active", btn.dataset.mode === id));
+      showRatios = teacherMode && showRatios;
+      resetState();
+      render();
+    }
+
+    function resetState() {
+      const start = modes[currentMode].start;
+      state.tx = start.tx;
+      state.ty = start.ty;
+      state.scale = start.scale;
+      state.rotation = start.rotation;
+      dragState = null;
+    }
+
+    function render() {
+      const mode = modes[currentMode];
+      const sourcePoints = place(mode.abc.map((p, i) => ({ ...p, label: ["A", "B", "C"][i] })), mode.sourceCenter);
+      const defPoints = place(toDefLabels(mode.def), mode.targetCenter);
+
+      modeTitle.textContent = mode.title;
+      modePrompt.textContent = mode.prompt;
+      renderMeasurements(mode);
+      renderRatios(mode);
+      renderSteps(mode, isCurrentFitPreview());
+      updateLayoutControls();
+
+      targetLayer.innerHTML = "";
+      movingLayer.innerHTML = "";
+
+      targetLayer.appendChild(makePolygon(sourcePoints, "source-poly"));
+      sourcePoints.forEach(p => targetLayer.appendChild(makeVertex(p, "abc-dot")));
+      if (showLabels) {
+        addPointLabels(targetLayer, sourcePoints);
+        addMeasurementLabels(targetLayer, sourcePoints, mode.abcSideLabels);
+      }
+
+      targetLayer.appendChild(makePolygon(defPoints, "target-poly"));
+      defPoints.forEach(p => targetLayer.appendChild(makeVertex(p, "def-dot")));
+      if (showLabels) {
+        addPointLabels(targetLayer, defPoints);
+        addMeasurementLabels(targetLayer, defPoints, mode.defSideLabels);
+      }
+      if (mode.angleMarks) {
+        const vertexIndex = mode.nonIncluded ? 0 : 1;
+        targetLayer.appendChild(makeAngleArc(defPoints, vertexIndex, "target"));
+      }
+
+      const transformed = mode.abc.map(transformPoint).map((p, i) => ({ ...p, label: ["A′", "B′", "C′"][i] }));
+      const isFit = checkFit(transformed, defPoints);
+      renderSteps(mode, isFit);
+      movingLayer.classList.toggle("fit", isFit);
+
+      movingLayer.appendChild(makePolygon(transformed, "moving-poly", "move"));
+      transformed.forEach(p => movingLayer.appendChild(makeVertex(p, "abc-dot")));
+      if (showLabels) {
+        addPointLabels(movingLayer, transformed);
+      }
+      if (mode.angleMarks) {
+        const vertexIndex = mode.nonIncluded ? 0 : 1;
+        movingLayer.appendChild(makeAngleArc(transformed, vertexIndex, "moving"));
+      }
+      addSelectionFrame(mode.abc);
+      addCanvasToast(isFit, mode);
+      if (isFit && snapEnabled && !mode.warning) {
+        snapToTarget(mode, defPoints);
+      }
+    }
+
+    function renderMeasurements(mode) {
+      measurementsBox.innerHTML = mode.measurements.map(([name, value]) => (
+        `<div class="metric"><span>${name}</span><strong>${value}</strong></div>`
+      )).join("");
+    }
+
+    function renderRatios(mode) {
+      ratiosBox.innerHTML = (mode.ratios.length ? mode.ratios : [["Ratios", "not needed in Trial mode"]])
+        .map(([name, value]) => `<div class="metric"><span>${name}</span><strong>${value}</strong></div>`)
+        .join("");
+      ratioSection.hidden = !teacherMode || !showRatios;
+      ratiosButton.textContent = showRatios ? "Hide Ratios" : "Show Ratios";
+      ratiosButton.classList.toggle("active", showRatios);
+      measureButton.textContent = showLabels ? "Hide Labels" : "Show Labels";
+      measureButton.classList.toggle("active", !showLabels);
+      snapButton.textContent = snapEnabled ? "Snap On" : "Snap Off";
+      snapButton.classList.toggle("active", snapEnabled);
+    }
+
+    function renderSteps(mode, isFit) {
+      const steps = mode.steps || [];
+      stepStrip.innerHTML = steps.map((step, index) => {
+        const active = isFit ? index === steps.length - 1 : index === 0;
+        return `<span class="step-pill${active ? " active" : ""}">${step}</span>`;
+      }).join("");
+    }
+
+    function updateLayoutControls() {
+      teacherModeButton.textContent = teacherMode ? "Student Mode" : "Teacher Mode";
+      teacherModeButton.classList.toggle("active", teacherMode);
+      focusButton.textContent = focusMode ? "Show Panel" : "Focus View";
+      focusButton.classList.toggle("active", focusMode);
+      mainLayout.classList.toggle("focus-mode", focusMode);
+      document.querySelectorAll(".teacher-only").forEach(el => {
+        el.classList.toggle("hidden", !teacherMode);
+      });
+      if (!teacherMode) {
+        ratioSection.hidden = true;
+      }
+    }
+
+    function isCurrentFitPreview() {
+      const mode = modes[currentMode];
+      const defPoints = place(toDefLabels(mode.def), mode.targetCenter);
+      const transformed = mode.abc.map(transformPoint).map((p, i) => ({ ...p, label: ["A′", "B′", "C′"][i] }));
+      return checkFit(transformed, defPoints);
+    }
+
+    function makePolygon(points, className, action) {
+      const poly = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+      poly.setAttribute("points", pointString(points));
+      poly.setAttribute("class", className);
+      if (action) {
+        poly.dataset.action = action;
+        poly.addEventListener("pointerdown", onPointerDown);
+      }
+      return poly;
+    }
+
+    function makeVertex(p, className) {
+      const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      circle.setAttribute("cx", p.x);
+      circle.setAttribute("cy", p.y);
+      circle.setAttribute("r", 6);
+      circle.setAttribute("class", `vertex ${className}`);
+      return circle;
+    }
+
+    function addPointLabels(layer, points) {
+      const center = points.reduce((acc, p) => ({
+        x: acc.x + p.x / points.length,
+        y: acc.y + p.y / points.length
+      }), { x: 0, y: 0 });
+      points.forEach(p => layer.appendChild(makeLabel(p, p.label, center)));
+    }
+
+    function makeLabel(p, text, center) {
+      const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      const offsetX = p.x >= center.x ? 14 : -28;
+      const offsetY = p.y >= center.y ? 26 : -14;
+      label.setAttribute("x", p.x + offsetX);
+      label.setAttribute("y", p.y + offsetY);
+      label.setAttribute("class", "label");
+      label.textContent = text;
+      return label;
+    }
+
+    function addMeasurementLabels(layer, points, labels) {
+      const center = points.reduce((acc, p) => ({
+        x: acc.x + p.x / points.length,
+        y: acc.y + p.y / points.length
+      }), { x: 0, y: 0 });
+      for (let i = 0; i < 3; i++) {
+        if (!labels[i]) continue;
+        const a = points[i];
+        const b = points[(i + 1) % 3];
+        const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+        let ox = mid.x - center.x;
+        let oy = mid.y - center.y;
+        const len = Math.hypot(ox, oy) || 1;
+        ox = (ox / len) * 24;
+        oy = (oy / len) * 24;
+        const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        label.setAttribute("x", mid.x + ox);
+        label.setAttribute("y", mid.y + oy + 6);
+        label.setAttribute("class", "side-label");
+        label.setAttribute("text-anchor", "middle");
+        label.textContent = labels[i];
+        layer.appendChild(label);
+      }
+    }
+
+    function addSelectionFrame(localPoints) {
+      const bounds = localBounds(localPoints);
+      const pad = 22;
+      const left = bounds.minX - pad;
+      const right = bounds.maxX + pad;
+      const top = bounds.minY - pad;
+      const bottom = bounds.maxY + pad;
+      const midX = (left + right) / 2;
+      const rectCorners = [
+        transformPoint({ x: left, y: top }),
+        transformPoint({ x: right, y: top }),
+        transformPoint({ x: right, y: bottom }),
+        transformPoint({ x: left, y: bottom })
+      ];
+      const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      rect.setAttribute("x", left);
+      rect.setAttribute("y", top);
+      rect.setAttribute("width", right - left);
+      rect.setAttribute("height", bottom - top);
+      rect.setAttribute("class", "selection-box");
+      rect.setAttribute("transform", transformAttr());
+      movingLayer.appendChild(rect);
+
+      const handlePoints = [
+        rectCorners[0],
+        rectCorners[1],
+        rectCorners[2],
+        rectCorners[3]
+      ];
+      handlePoints.forEach(p => movingLayer.appendChild(makeResizeHandle(p)));
+
+      const rotateBase = transformPoint({ x: midX, y: bottom });
+      const rotatePoint = transformPoint({ x: midX, y: bottom + 58 });
+      movingLayer.appendChild(makeLine(rotateBase, rotatePoint));
+      movingLayer.appendChild(makeRotateHandle(rotatePoint));
+    }
+
+    function transformAttr() {
+      return `translate(${state.tx} ${state.ty}) rotate(${state.rotation}) scale(${state.scale})`;
+    }
+
+    function screenBounds(points) {
+      const xs = points.map(p => p.x);
+      const ys = points.map(p => p.y);
+      return {
+        minX: Math.min(...xs),
+        maxX: Math.max(...xs),
+        minY: Math.min(...ys),
+        maxY: Math.max(...ys)
+      };
+    }
+
+    function makeLine(a, b) {
+      const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      line.setAttribute("x1", a.x);
+      line.setAttribute("y1", a.y);
+      line.setAttribute("x2", b.x);
+      line.setAttribute("y2", b.y);
+      line.setAttribute("class", "handle-line");
+      return line;
+    }
+
+    function makeResizeHandle(p, r = 9) {
+      const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      group.dataset.action = "scale";
+      group.addEventListener("pointerdown", onPointerDown);
+      const hit = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      hit.setAttribute("cx", p.x);
+      hit.setAttribute("cy", p.y);
+      hit.setAttribute("r", r + 14);
+      hit.setAttribute("class", "handle-hit");
+      const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      circle.setAttribute("cx", p.x);
+      circle.setAttribute("cy", p.y);
+      circle.setAttribute("r", r);
+      circle.setAttribute("class", "resize-handle");
+      group.appendChild(hit);
+      group.appendChild(circle);
+      return group;
+    }
+
+    function makeRotateHandle(p, r = 18) {
+      const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      group.dataset.action = "rotate";
+      group.addEventListener("pointerdown", onPointerDown);
+      const hit = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      hit.setAttribute("cx", p.x);
+      hit.setAttribute("cy", p.y);
+      hit.setAttribute("r", r + 15);
+      hit.setAttribute("class", "handle-hit");
+      const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      circle.setAttribute("cx", p.x);
+      circle.setAttribute("cy", p.y);
+      circle.setAttribute("r", r);
+      circle.setAttribute("class", "rotate-handle");
+      const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      text.setAttribute("x", p.x);
+      text.setAttribute("y", p.y + 1);
+      text.setAttribute("class", "rotate-symbol");
+      text.textContent = "↻";
+      group.appendChild(hit);
+      group.appendChild(circle);
+      group.appendChild(text);
+      return group;
+    }
+
+    function makeAngleArc(points, vertexIndex, type) {
+      const p = points[vertexIndex];
+      const p1 = points[(vertexIndex + 2) % 3];
+      const p2 = points[(vertexIndex + 1) % 3];
+      const r = type === "target" ? 38 : 32;
+      const a1 = Math.atan2(p1.y - p.y, p1.x - p.x);
+      const a2 = Math.atan2(p2.y - p.y, p2.x - p.x);
+      const start = { x: p.x + r * Math.cos(a1), y: p.y + r * Math.sin(a1) };
+      const end = { x: p.x + r * Math.cos(a2), y: p.y + r * Math.sin(a2) };
+      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      path.setAttribute("d", `M ${start.x} ${start.y} A ${r} ${r} 0 0 1 ${end.x} ${end.y}`);
+      path.setAttribute("class", "angle-arc");
+      return path;
+    }
+
+    function onPointerDown(event) {
+      event.preventDefault();
+      const point = svgPointFromEvent(event);
+      const action = event.currentTarget.dataset.action;
+      dragState = {
+        action,
+        startPoint: point,
+        startTx: state.tx,
+        startTy: state.ty,
+        startScale: state.scale,
+        startRotation: state.rotation,
+        startDistance: distance(point, { x: state.tx, y: state.ty }),
+        startAngle: angleBetween({ x: state.tx, y: state.ty }, point)
+      };
+      svg.setPointerCapture(event.pointerId);
+    }
+
+    function onPointerMove(event) {
+      if (!dragState) return;
+      event.preventDefault();
+      const point = svgPointFromEvent(event);
+      if (dragState.action === "move") {
+        state.tx = dragState.startTx + point.x - dragState.startPoint.x;
+        state.ty = dragState.startTy + point.y - dragState.startPoint.y;
+      }
+      if (dragState.action === "rotate") {
+        const currentAngle = angleBetween({ x: state.tx, y: state.ty }, point);
+        state.rotation = dragState.startRotation + currentAngle - dragState.startAngle;
+      }
+      if (dragState.action === "scale") {
+        const d = distance(point, { x: state.tx, y: state.ty });
+        const ratio = d / Math.max(dragState.startDistance, 1);
+        state.scale = clamp(dragState.startScale * ratio, 0.35, 3.2);
+      }
+      render();
+    }
+
+    function onPointerUp(event) {
+      if (dragState) {
+        event.preventDefault();
+        dragState = null;
+      }
+    }
+
+    function distance(a, b) {
+      return Math.hypot(a.x - b.x, a.y - b.y);
+    }
+
+    function angleBetween(a, b) {
+      return Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI;
+    }
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function checkFit(abcPoints, defPoints) {
+      const maxDistance = Math.max(...abcPoints.map((p, i) => distance(p, defPoints[i])));
+      return maxDistance < 18;
+    }
+
+    function addCanvasToast(isFit, mode) {
+      const shouldShow = isFit || mode.warning;
+      const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      group.setAttribute("class", `canvas-toast${shouldShow ? " show" : ""}`);
+      const warn = mode.warning && !isFit;
+      const message = isFit
+        ? mode.fitMessage
+        : "Warning: the equal angle is not between the proportional sides.";
+      const lines = wrapMessage(message, 34);
+      const x = 28;
+      const y = 58;
+      const width = 360;
+      const height = 28 + lines.length * 24;
+      const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      rect.setAttribute("x", x);
+      rect.setAttribute("y", y);
+      rect.setAttribute("width", width);
+      rect.setAttribute("height", height);
+      rect.setAttribute("rx", 8);
+      rect.setAttribute("class", `toast-box${warn ? " warn" : ""}`);
+      group.appendChild(rect);
+      lines.forEach((line, index) => {
+        const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        text.setAttribute("x", x + 16);
+        text.setAttribute("y", y + 28 + index * 24);
+        text.setAttribute("class", `toast-text${warn ? " warn" : ""}`);
+        text.textContent = line;
+        group.appendChild(text);
+      });
+      if (shouldShow) movingLayer.appendChild(group);
+    }
+
+    function wrapMessage(message, maxChars) {
+      const words = message.split(" ");
+      const lines = [];
+      let current = "";
+      for (const word of words) {
+        const next = current ? `${current} ${word}` : word;
+        if (next.length > maxChars && current) {
+          lines.push(current);
+          current = word;
+        } else {
+          current = next;
+        }
+      }
+      if (current) lines.push(current);
+      return lines;
+    }
+
+    function snapToTarget(mode, defPoints) {
+      const abc = mode.abc;
+      const a0 = abc[0];
+      const b0 = abc[1];
+      const d0 = defPoints[0];
+      const e0 = defPoints[1];
+      const abcAngle = angleBetween(a0, b0);
+      const defAngle = angleBetween(d0, e0);
+      const abcLength = distance(a0, b0);
+      const defLength = distance(d0, e0);
+      state.scale = defLength / abcLength;
+      state.rotation = defAngle - abcAngle;
+      const transformedA = transformPoint(a0);
+      state.tx += d0.x - transformedA.x;
+      state.ty += d0.y - transformedA.y;
+      snapEnabled = false;
+      renderRatios(mode);
+      window.requestAnimationFrame(render);
+    }
+
+    MODE_BUTTONS.forEach(button => {
+      button.addEventListener("click", () => setMode(button.dataset.mode));
+    });
+
+    resetButton.addEventListener("click", () => {
+      resetState();
+      render();
+    });
+
+    ratiosButton.addEventListener("click", () => {
+      teacherMode = true;
+      showRatios = !showRatios;
+      render();
+    });
+
+    measureButton.addEventListener("click", () => {
+      showLabels = !showLabels;
+      render();
+    });
+
+    snapButton.addEventListener("click", () => {
+      teacherMode = true;
+      snapEnabled = !snapEnabled;
+      render();
+    });
+
+    teacherModeButton.addEventListener("click", () => {
+      teacherMode = !teacherMode;
+      if (!teacherMode) {
+        showRatios = false;
+        snapEnabled = false;
+      }
+      render();
+    });
+
+    focusButton.addEventListener("click", () => {
+      focusMode = !focusMode;
+      render();
+    });
+
+    svg.addEventListener("pointermove", onPointerMove);
+    svg.addEventListener("pointerup", onPointerUp);
+    svg.addEventListener("pointercancel", onPointerUp);
+    svg.addEventListener("lostpointercapture", onPointerUp);
+
+    resetState();
+    render();
+  </script>
+</body>
+</html>
