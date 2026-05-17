@@ -503,8 +503,8 @@
       <div class="header-controls">
         <div class="mode-tabs" aria-label="Mode selector">
           <button class="mode-button active" data-mode="trial">Trial</button>
-          <button class="mode-button" data-mode="sss">SSS</button>
-          <button class="mode-button" data-mode="sas">SAS</button>
+          <button class="mode-button" data-mode="sss">3 sides prop.</button>
+          <button class="mode-button" data-mode="sas">2 sides + inc. ∠</button>
           <button class="mode-button" data-mode="warning">Warning</button>
         </div>
         <div class="top-actions">
@@ -632,7 +632,7 @@
         warning: false
       },
       sss: {
-        title: "SSS Discovery",
+        title: "Three Sides Proportional",
         prompt: "First compare the three side ratios on your worksheet. Then scale, move, and rotate ABC until it fits DEF.",
         abc: triangleFromSSS(2.5, 3, 2.2, PX),
         def: triangleFromSSS(5, 6, 4.4, PX),
@@ -655,7 +655,7 @@
         warning: false
       },
       sas: {
-        title: "SAS Discovery",
+        title: "Ratio of Two Sides and Included Angle",
         prompt: "Compare two side ratios and the included angle. Then try to fit ABC exactly onto DEF.",
         abc: triangleFromSAS(4, 2.4, 120, PX),
         def: triangleFromSAS(5, 3, 120, PX),
@@ -681,7 +681,7 @@
       },
       warning: {
         title: "Non-included Angle Warning",
-        prompt: "Two side ratios and an equal angle are shown, but the angle is not between the two proportional sides. Try fitting ABC onto DEF.",
+        prompt: "Ratio of two sides and an equal angle are shown, but the angle is not between the two proportional sides. Try fitting ABC onto DEF.",
         abc: triangleFromSSA(5, 4, 45, "long", PX),
         def: triangleFromSSA(6, 4.8, 45, "short", PX),
         sourceCenter: { x: 235, y: 280 },
